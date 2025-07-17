@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Casita">
+    <title>Casita - Sensor Dashboard</title>
+    <link rel="manifest" href="/manifest.json?v=2">
+    <link rel="apple-touch-icon" href="/static/icon-1000.png?v=2">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .sensor-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .sensor-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 400;
+        }
+
+        .sensor-value {
+            font-size: 3rem;
+            font-weight: 300;
+            margin-bottom: 5px;
+        }
+
+        .sensor-unit {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .last-updated {
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .sensor-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .sensor-value {
+                font-size: 2.5rem;
+            }
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 95vw;
+            max-height: 90vh;
+            width: 700px;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            position: relative;
+        }
+        .modal-content canvas {
+            width: 100% !important;
+            height: 60vh !important;
+            background: #fff;
+            border-radius: 12px;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #333;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        @media (max-width: 800px) {
+            .modal-content {
+                width: 98vw;
+                height: 60vh;
+                padding: 10px;
+            }
+            .modal-content canvas {
+                height: 45vh !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Casita</h1>
+            <p>Real-time environmental monitoring</p>
+        </div>
+
+        {% if data.status == 'success' %}
+            <div class="sensor-grid">
+                <div class="sensor-card">
+                    <h3>Temperature</h3>
+                    <div class="sensor-value">{{ data.temperature }}</div>
+                    <div class="sensor-unit">°C</div>
+                </div>
+                <div class="sensor-card">
+                    <h3>Humidity</h3>
+                    <div class="sensor-value">{{ data.humidity }}</div>
+                    <div class="sensor-unit">%</div>
+                </div>
+            </div>
+        {% else %}
+            <div class="error-message">
+                <h3>Sensor Error</h3>
+                <p>{{ data.error }}</p>
+            </div>
+        {% endif %}
+
+        <button class="refresh-btn" onclick="location.reload()">Refresh Data</button>
+        
+        <div class="last-updated">
+            Last updated: <span id="last-updated"></span>
+        </div>
+
+        <!-- History Graph Section -->
+        <div style="margin-top:40px;">
+            <h2 style="font-size:1.3rem; color:#333; margin-bottom:10px;">History (Last 24 Hours)</h2>
+            <div id="chartContainer" style="height:300px; width:100%; background:#fff; border-radius:12px; padding:10px; cursor:pointer;">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for expanded chart (moved outside container) -->
+    <div id="chartModal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="closeModal" class="close-btn">&times;</button>
+            <canvas id="expandedHistoryChart"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js?v=2')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // Auto-refresh every 30 seconds
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+
+        // Show current time as last updated
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('last-updated').textContent = timeString;
+        }
+        updateTime();
+
+        // Chart data cache for reuse
+        let chartHistoryData = null;
+        let chartLabels = null;
+        let chartTempData = null;
+        let chartHumidityData = null;
+
+        // Fetch and display history graph
+        async function fetchHistoryAndRenderChart(expanded = false) {
+            try {
+                const res = await fetch('/api/history');
+                const history = await res.json();
+                
+                // Combine all readings and sort by timestamp
+                let allReadings = [];
+                if (history.temperature) {
+                    history.temperature.forEach(entry => {
+                        allReadings.push({
+                            timestamp: new Date(entry.timestamp),
+                            sensor: 'temperature',
+                            value: entry.value
+                        });
+                    });
+                }
+                if (history.humidity) {
+                    history.humidity.forEach(entry => {
+                        allReadings.push({
+                            timestamp: new Date(entry.timestamp),
+                            sensor: 'humidity',
+                            value: entry.value
+                        });
+                    });
+                }
+                allReadings.sort((a, b) => a.timestamp - b.timestamp);
+                const last24HoursReadings = allReadings;
+                const labels = last24HoursReadings.map((reading, index) => {
+                    const readingTime = reading.timestamp;
+                    return readingTime.toLocaleTimeString([], {
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                    });
+                });
+                const tempData = last24HoursReadings.map(reading => 
+                    reading.sensor === 'temperature' ? reading.value : null
+                );
+                const humidityData = last24HoursReadings.map(reading => 
+                    reading.sensor === 'humidity' ? reading.value : null
+                );
+                chartLabels = labels;
+                chartTempData = tempData;
+                chartHumidityData = humidityData;
+                // Draw chart
+                const ctx = expanded
+                    ? document.getElementById('expandedHistoryChart').getContext('2d')
+                    : document.getElementById('historyChart').getContext('2d');
+                if (expanded && window.expandedChartInstance) {
+                    window.expandedChartInstance.destroy();
+                }
+                if (!expanded && window.chartInstance) {
+                    window.chartInstance.destroy();
+                }
+                const chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Temperature (°C)',
+                                data: tempData,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102,126,234,0.1)',
+                                tension: 0.3,
+                                pointRadius: 3,
+                                pointHoverRadius: 5,
+                                yAxisID: 'y',
+                                spanGaps: true
+                            },
+                            {
+                                label: 'Humidity (%)',
+                                data: humidityData,
+                                borderColor: '#ff6b6b',
+                                backgroundColor: 'rgba(255,107,107,0.1)',
+                                tension: 0.3,
+                                pointRadius: 3,
+                                pointHoverRadius: 5,
+                                yAxisID: 'y1',
+                                spanGaps: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                position: 'left',
+                                title: { 
+                                    display: true, 
+                                    text: 'Temperature (°C)' 
+                                },
+                                min: 0,
+                                max: 50
+                            },
+                            y1: {
+                                type: 'linear',
+                                position: 'right',
+                                grid: { drawOnChartArea: false },
+                                title: { 
+                                    display: true, 
+                                    text: 'Humidity (%)' 
+                                },
+                                min: 0,
+                                max: 100
+                            }
+                        },
+                        plugins: {
+                            legend: { 
+                                display: true, 
+                                position: 'top' 
+                            },
+                            tooltip: { 
+                                mode: 'index', 
+                                intersect: false 
+                            }
+                        }
+                    }
+                });
+                if (expanded) {
+                    window.expandedChartInstance = chartInstance;
+                } else {
+                    window.chartInstance = chartInstance;
+                }
+            } catch (err) {
+                console.error('Failed to load history:', err);
+            }
+        }
+        fetchHistoryAndRenderChart();
+
+        // Chart expand/collapse logic
+        const chartContainer = document.getElementById('chartContainer');
+        const chartModal = document.getElementById('chartModal');
+        const closeModal = document.getElementById('closeModal');
+        chartContainer.addEventListener('click', () => {
+            chartModal.classList.add('active');
+            setTimeout(() => {
+                fetchHistoryAndRenderChart(true);
+            }, 100);
+        });
+        closeModal.addEventListener('click', () => {
+            chartModal.classList.remove('active');
+        });
+        chartModal.addEventListener('click', (e) => {
+            if (e.target === chartModal) {
+                chartModal.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html> 

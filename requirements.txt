@@ -1,0 +1,6 @@
+RPi.GPIO
+adafruit-circuitpython-sht4x
+Flask
+psycopg2-binary
+Flask-SQLAlchemy
+python-dotenv
