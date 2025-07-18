@@ -1,10 +1,9 @@
 from flask import Flask, render_template, send_from_directory, jsonify
 import time
-import board
-import adafruit_sht4x
 import os
 from dotenv import load_dotenv
 from database import db, SensorHistory
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -14,33 +13,34 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('DB_USER')}:{o
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-def get_sensor_data():
-    """Read temperature and humidity from SHT4x sensor and save to database"""
+def get_latest_sensor_data():
+    """Get the latest temperature and humidity readings from database"""
     try:
-        i2c = board.I2C()
-        sht = adafruit_sht4x.SHT4x(i2c)
-        sht.mode = adafruit_sht4x.Mode.NOHEAT_HIGHPRECISION
-        temperature, relative_humidity = sht.measurements
-        
-        temp_rounded = round(temperature, 1)
-        humidity_rounded = round(relative_humidity, 1)
-        
-        try:
-            with app.app_context():
-                temp_record = SensorHistory(sensor_name='temperature', value=temp_rounded)
-                db.session.add(temp_record)
-                humidity_record = SensorHistory(sensor_name='humidity', value=humidity_rounded)
-                db.session.add(humidity_record)
-                
-                db.session.commit()
-        except Exception as db_error:
-            print(f"Database error: {db_error}")
-        
-        return {
-            'temperature': temp_rounded,
-            'humidity': humidity_rounded,
-            'status': 'success'
-        }
+        with app.app_context():
+            # Get latest temperature reading
+            latest_temp = SensorHistory.query.filter_by(
+                sensor_name='temperature'
+            ).order_by(SensorHistory.timestamp.desc()).first()
+
+            # Get latest humidity reading
+            latest_humidity = SensorHistory.query.filter_by(
+                sensor_name='humidity'
+            ).order_by(SensorHistory.timestamp.desc()).first()
+
+            if latest_temp and latest_humidity:
+                return {
+                    'temperature': latest_temp.value,
+                    'humidity': latest_humidity.value,
+                    'status': 'success',
+                    'timestamp': latest_temp.timestamp.isoformat()
+                }
+            else:
+                return {
+                    'temperature': None,
+                    'humidity': None,
+                    'status': 'error',
+                    'error': 'No sensor data available'
+                }
     except Exception as e:
         return {
             'temperature': None,
@@ -51,12 +51,12 @@ def get_sensor_data():
 
 @app.route('/')
 def index():
-    sensor_data = get_sensor_data()
+    sensor_data = get_latest_sensor_data()
     return render_template('index.html', data=sensor_data)
 
 @app.route('/api/sensor')
 def api_sensor():
-    return get_sensor_data()
+    return get_latest_sensor_data()
 
 @app.route('/api/history')
 def api_history():

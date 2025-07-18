@@ -1,6 +1,12 @@
-# Sensor Dashboard
+# Casita - Sensor Dashboard
 
-A Flask web application that displays real-time temperature and humidity data from an SHT4x sensor connected to a Raspberry Pi.
+A modern sensor monitoring system with a daemon for continuous data collection and a web interface for visualization. Built for Raspberry Pi with SHT4x temperature/humidity sensor.
+
+## Architecture
+
+- **Sensor Daemon**: Runs continuously, reads sensor every 15 seconds, saves to PostgreSQL
+- **Web Interface**: Flask app that displays data from database
+- **Progressive Web App**: Installable mobile app with real-time charts
 
 ## Features
 
@@ -53,12 +59,32 @@ Since we are using a Raspberry Pi OS we can install the database direct in the s
    vim .env
    ```
 
+7. **Install the Sensor Daemon**:
+   ```bash
+   sudo ./install_daemon.sh
+   ```
+
 ## Usage
 
-1. Start the Flask application:
-   ```bash
-   python app.py
-   ```
+### Start the Sensor Daemon:
+The daemon runs automatically as a systemd service and starts on boot:
+```bash
+# Check status
+sudo systemctl status casita-sensor
+
+# View logs
+sudo journalctl -u casita-sensor -f
+
+# Manual control (if needed)
+sudo systemctl start casita-sensor
+sudo systemctl stop casita-sensor
+sudo systemctl restart casita-sensor
+```
+
+### Start the Web Interface:
+```bash
+python app.py
+```
 
    Troubleshoot: I am using Port 80. It will probably fail. So try to apt install authbind and configure it
    

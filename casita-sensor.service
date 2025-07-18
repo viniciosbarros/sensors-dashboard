@@ -1,0 +1,18 @@
+[Unit]
+Description=Casita Sensor Daemon
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=vini
+Group=vini
+WorkingDirectory=/home/vini/sensors
+ExecStart=/home/vini/sensors/run_daemon.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target 

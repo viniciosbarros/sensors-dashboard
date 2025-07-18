@@ -1,10 +1,13 @@
-const CACHE_NAME = 'sensor-dashboard-v2';
+const CACHE_NAME = 'sensor-dashboard-v3';
 const urlsToCache = [
   '/',
   '/static/manifest.json',
   '/static/icon-1000.png',
   '/static/icon-512.png',
-  '/static/icon-192.png'
+  '/static/icon-192.png',
+  '/static/icon-1000-round.png',
+  '/static/icon-512-round.png',
+  '/static/icon-192-round.png'
 ];
 
 self.addEventListener('install', event => {

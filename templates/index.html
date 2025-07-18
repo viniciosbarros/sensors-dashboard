@@ -8,8 +8,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Casita">
     <title>Casita - Sensor Dashboard</title>
-    <link rel="manifest" href="/manifest.json?v=2">
-    <link rel="apple-touch-icon" href="/static/icon-1000.png?v=2">
+                <link rel="manifest" href="/manifest.json?v=3">
+            <link rel="apple-touch-icon" href="/static/icon-1000.png?v=3">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         * {
@@ -253,7 +253,7 @@
         // Register service worker for PWA functionality
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=2')
+                navigator.serviceWorker.register('/sw.js?v=3')
                     .then(registration => {
                         console.log('SW registered: ', registration);
                     })
